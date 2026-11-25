@@ -74,7 +74,8 @@ fn read_secret_in(dir: &Path, key: &str) -> Result<Option<String>> {
     if !path.is_file() {
         return Ok(None);
     }
-    let bytes = fs::read(&path).with_context(|| format!("无法读取便携凭据文件：{}", path.display()))?;
+    let bytes =
+        fs::read(&path).with_context(|| format!("无法读取便携凭据文件：{}", path.display()))?;
     let secrets: BTreeMap<String, String> = serde_json::from_slice(&bytes)
         .with_context(|| format!("便携凭据文件格式无效：{}", path.display()))?;
     Ok(secrets
@@ -179,7 +180,9 @@ mod tests {
 
         write_secret_in(&data_dir, "mineru-token", "secret-123").unwrap();
         assert_eq!(
-            read_secret_in(&data_dir, "mineru-token").unwrap().as_deref(),
+            read_secret_in(&data_dir, "mineru-token")
+                .unwrap()
+                .as_deref(),
             Some("secret-123")
         );
 
