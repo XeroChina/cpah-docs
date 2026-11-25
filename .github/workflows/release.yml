@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      build_macos:
+        description: "Also build macOS release"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -26,6 +32,7 @@ jobs:
           cache: npm
 
       - name: Verify tag matches package version
+        if: github.event_name == 'push'
         shell: pwsh
         run: |
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
@@ -42,10 +49,11 @@ jobs:
       - name: Build and verify release
         run: npm run release
 
-      - name: Attest executable provenance
+      - name: Attest portable package provenance
+        if: github.event.repository.private == false
         uses: actions/attest-build-provenance@v4.2.2
         with:
-          subject-path: release/CPAH-Docs-*.exe
+          subject-path: release/CPAH-Docs-*.zip
 
       - name: Upload Windows release artifact
         uses: actions/upload-artifact@v7
@@ -55,6 +63,7 @@ jobs:
 
   macos:
     name: Build macOS universal release
+    if: github.event_name == 'push' || inputs.build_macos == true
     runs-on: macos-latest
     timeout-minutes: 90
     steps:
@@ -68,6 +77,7 @@ jobs:
           cache: npm
 
       - name: Verify tag matches package version
+        if: github.event_name == 'push'
         shell: bash
         run: |
           version="$(node -e 'const fs = require("node:fs"); process.stdout.write(JSON.parse(fs.readFileSync("package.json", "utf8")).version)')"
@@ -86,6 +96,7 @@ jobs:
         run: npm run release
 
       - name: Attest DMG provenance
+        if: github.event.repository.private == false
         uses: actions/attest-build-provenance@v4.2.2
         with:
           subject-path: release/CPAH-Docs-*.dmg
@@ -98,6 +109,7 @@ jobs:
 
   publish:
     name: Publish GitHub Release
+    if: github.event_name == 'push'
     needs: [windows, macos]
     runs-on: ubuntu-latest
     steps:
@@ -120,7 +132,7 @@ jobs:
         shell: bash
         run: |
           mkdir release
-          cp artifacts/windows/CPAH-Docs-*.exe release/
+          cp artifacts/windows/CPAH-Docs-*.zip release/
           cp artifacts/macos/CPAH-Docs-*.dmg release/
           cmp artifacts/windows/LICENSE.txt artifacts/macos/LICENSE.txt
           cmp artifacts/windows/THIRD_PARTY_LICENSES.md artifacts/macos/THIRD_PARTY_LICENSES.md
@@ -135,7 +147,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "${{ github.ref_name }}" \
-            release/CPAH-Docs-*.exe \
+            release/CPAH-Docs-*.zip \
             release/CPAH-Docs-*.dmg \
             release/LICENSE.txt \
             release/THIRD_PARTY_LICENSES.md \

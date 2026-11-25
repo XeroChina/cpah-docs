@@ -13,6 +13,7 @@ mod logging;
 mod mineru;
 mod models;
 mod pdf_split;
+mod portable;
 mod priority_queue;
 mod qpdf;
 mod runtime;
@@ -37,6 +38,7 @@ use tauri::tray::{TrayIconBuilder, TrayIconEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    portable::init();
     let builder = tauri::Builder::default();
     // Register first, so secondary launches exit before any runtime opens the
     // shared task database or starts directory watching.
@@ -49,8 +51,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .setup(|app| {
-            let data_dir = app.path().app_data_dir()?;
-            state::migrate_legacy_data_dir(&data_dir)?;
+            let data_dir = match portable::data_dir() {
+                Some(dir) => dir.to_path_buf(),
+                None => app.path().app_data_dir()?,
+            };
+            if !portable::is_portable() {
+                state::migrate_legacy_data_dir(&data_dir)?;
+            }
             logging::initialize(&data_dir)?;
             let state = AppState::new(data_dir)?;
             let language = state.language();

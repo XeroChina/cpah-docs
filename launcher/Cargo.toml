@@ -1,0 +1,15 @@
+[package]
+name = "cpah-docs-launcher"
+version = "1.5.3"
+description = "Portable launcher for CPAH Docs"
+edition = "2024"
+rust-version = "1.97"
+license = "MIT"
+publish = false
+
+[[bin]]
+name = "CPAH-Docs"
+path = "src/main.rs"
+
+[target.'cfg(windows)'.build-dependencies]
+tauri-winres = "0.3"

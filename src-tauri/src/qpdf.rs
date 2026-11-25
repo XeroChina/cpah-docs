@@ -24,6 +24,9 @@ pub(crate) fn check_cancelled(control: Option<&ProfileRuntimeControl>) -> Result
 }
 
 fn cache_root() -> PathBuf {
+    if let Some(portable_qpdf) = crate::portable::qpdf_cache_root() {
+        return portable_qpdf;
+    }
     #[cfg(windows)]
     let base = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
     #[cfg(target_os = "macos")]

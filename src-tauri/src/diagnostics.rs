@@ -272,7 +272,12 @@ pub async fn run_health_check(state: &AppState) -> HealthReport {
             "当前可在本地转换；若 PDF 被判定需要 OCR，再配置 MinerU Token。",
         )
     } else if settings.mineru_configured && AppState::read_mineru_token().is_ok() {
-        check_ok("mineru", "MinerU", "Token 已保存在系统凭据库中。")
+        let message = if crate::portable::is_portable() {
+            "Token 已保存在便携数据目录中。"
+        } else {
+            "Token 已保存在系统凭据库中。"
+        };
+        check_ok("mineru", "MinerU", message)
     } else {
         check_warning(
             "mineru",

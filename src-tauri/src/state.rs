@@ -358,6 +358,10 @@ impl AppState {
     }
 
     pub fn write_mineru_token(token: &str) -> Result<()> {
+        if crate::portable::is_portable() {
+            return crate::portable::write_secret(MINERU_KEYRING_USER, token)
+                .context("无法写入便携凭据文件");
+        }
         let entry = keyring::Entry::new(KEYRING_SERVICE, MINERU_KEYRING_USER)?;
         entry.set_password(token).context("无法写入系统凭据库")
     }
@@ -367,12 +371,20 @@ impl AppState {
     }
 
     pub fn write_agent_api_key(token: &str) -> Result<()> {
+        if crate::portable::is_portable() {
+            return crate::portable::write_secret(AGENT_KEYRING_USER, token)
+                .context("无法写入便携凭据文件");
+        }
         let entry = keyring::Entry::new(KEYRING_SERVICE, AGENT_KEYRING_USER)?;
         entry.set_password(token).context("无法写入系统凭据库")
     }
 }
 
 fn read_or_migrate_secret(user: &str) -> Result<String> {
+    if crate::portable::is_portable() {
+        return crate::portable::read_secret(user)?.context("凭据为空");
+    }
+
     let entry = keyring::Entry::new(KEYRING_SERVICE, user)?;
     if let Ok(secret) = entry.get_password()
         && !secret.is_empty()

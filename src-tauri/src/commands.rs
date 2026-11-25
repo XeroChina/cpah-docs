@@ -31,11 +31,11 @@ pub fn set_ui_language(
     language: crate::locale::Language,
 ) -> CommandResult<()> {
     use tauri::Manager;
-    let path = app
-        .path()
-        .app_data_dir()
-        .map_err(display_error)?
-        .join("ui-language.json");
+    let data_dir = match crate::portable::data_dir() {
+        Some(dir) => dir.to_path_buf(),
+        None => app.path().app_data_dir().map_err(display_error)?,
+    };
+    let path = data_dir.join("ui-language.json");
     crate::atomic_file::write_atomic(
         &path,
         &serde_json::to_vec(&language).map_err(display_error)?,

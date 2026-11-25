@@ -8,6 +8,7 @@
 /output/
 
 # Rust / Tauri build output
+/launcher/target/
 /src-tauri/target/
 /src-tauri/target-*/
 /src-tauri/gen/schemas/

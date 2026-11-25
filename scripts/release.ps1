@@ -58,6 +58,9 @@ try {
     cargo fmt --manifest-path src-tauri/Cargo.toml --all -- --check
     if ($LASTEXITCODE -ne 0) { throw "Rust formatting check failed" }
 
+    cargo fmt --manifest-path launcher/Cargo.toml --all -- --check
+    if ($LASTEXITCODE -ne 0) { throw "Launcher formatting check failed" }
+
     npm.cmd run build
     if ($LASTEXITCODE -ne 0) { throw "Frontend production build failed" }
 
@@ -73,11 +76,20 @@ try {
     cargo test --manifest-path src-tauri/Cargo.toml --all-targets
     if ($LASTEXITCODE -ne 0) { throw "Rust tests failed" }
 
+    cargo test --manifest-path launcher/Cargo.toml --all-targets
+    if ($LASTEXITCODE -ne 0) { throw "Launcher tests failed" }
+
     cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
     if ($LASTEXITCODE -ne 0) { throw "Clippy checks failed" }
 
+    cargo clippy --manifest-path launcher/Cargo.toml --all-targets -- -D warnings
+    if ($LASTEXITCODE -ne 0) { throw "Launcher Clippy checks failed" }
+
     npx.cmd tauri build --no-bundle
     if ($LASTEXITCODE -ne 0) { throw "Tauri release build failed" }
+
+    cargo build --manifest-path launcher/Cargo.toml --release
+    if ($LASTEXITCODE -ne 0) { throw "Launcher release build failed" }
 
     $cargoMetadataJson = cargo metadata --manifest-path src-tauri/Cargo.toml --format-version 1 --no-deps
     if ($LASTEXITCODE -ne 0) { throw "Cannot resolve Cargo build directory" }
@@ -87,11 +99,44 @@ try {
         throw "Release EXE not found: $sourceExe"
     }
 
+    $launcherMetadataJson = cargo metadata --manifest-path launcher/Cargo.toml --format-version 1 --no-deps
+    if ($LASTEXITCODE -ne 0) { throw "Cannot resolve launcher build directory" }
+    $launcherTargetDirectory = ($launcherMetadataJson | ConvertFrom-Json).target_directory
+    $launcherExe = Join-Path $launcherTargetDirectory "release\CPAH-Docs.exe"
+    if (-not (Test-Path -LiteralPath $launcherExe -PathType Leaf)) {
+        throw "Launcher EXE not found: $launcherExe"
+    }
+
     $artifactDirectory = Join-Path $projectRoot "release"
+    if (Test-Path -LiteralPath $artifactDirectory) {
+        Remove-Item -LiteralPath $artifactDirectory -Recurse -Force
+    }
     New-Item -ItemType Directory -Path $artifactDirectory -Force | Out-Null
-    $artifactName = "CPAH-Docs-v$packageVersion-windows-x64.exe"
+
+    $portableFolderName = "CPAH-Docs-v$packageVersion-windows-x64"
+    $portableRoot = Join-Path $artifactDirectory $portableFolderName
+    $programDirectory = Join-Path $portableRoot "Program"
+    $dataDirectory = Join-Path $portableRoot "Data"
+    New-Item -ItemType Directory -Path $programDirectory -Force | Out-Null
+    New-Item -ItemType Directory -Path $dataDirectory -Force | Out-Null
+
+    Copy-Item -LiteralPath $launcherExe -Destination (Join-Path $portableRoot "CPAH-Docs.exe") -Force
+    Copy-Item -LiteralPath $sourceExe -Destination (Join-Path $programDirectory "cpah-docs.exe") -Force
+    [System.IO.File]::WriteAllBytes((Join-Path $portableRoot "portable"), @())
+    Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination (Join-Path $portableRoot "LICENSE.txt") -Force
+    Copy-Item -LiteralPath $thirdPartyLicensesPath -Destination (Join-Path $portableRoot "THIRD_PARTY_LICENSES.md") -Force
+
+    $artifactName = "CPAH-Docs-v$packageVersion-windows-x64-portable.zip"
     $artifactPath = Join-Path $artifactDirectory $artifactName
-    Copy-Item -LiteralPath $sourceExe -Destination $artifactPath -Force
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::CreateFromDirectory(
+        $portableRoot,
+        $artifactPath,
+        [System.IO.Compression.CompressionLevel]::Optimal,
+        $true
+    )
+    Remove-Item -LiteralPath $portableRoot -Recurse -Force
+
     Copy-Item -LiteralPath (Join-Path $projectRoot "LICENSE") -Destination (Join-Path $artifactDirectory "LICENSE.txt") -Force
     Copy-Item -LiteralPath $thirdPartyLicensesPath -Destination (Join-Path $artifactDirectory "THIRD_PARTY_LICENSES.md") -Force
 
