@@ -652,5 +652,9 @@
   "该开关只控制当前目录；全部暂停时，已启用目录也不会监听。": "This switch controls this folder only. Global pause also stops watching enabled folders.",
   "全部目录已暂停监听；已有待执行任务不受影响。": "Watching paused for all folders. Existing queued tasks are unaffected.",
   "全部目录已开始监听；正在扫描并把发现的文件加入待执行。": "Watching started for all enabled folders. Discovered files are being scanned and queued.",
-  "全部目录已暂停监听，请先点击“全部开始监听”再重新扫描目录": "Watching is paused globally. Click “Start all watching” before rescanning"
+  "全部目录已暂停监听，请先点击“全部开始监听”再重新扫描目录": "Watching is paused globally. Click “Start all watching” before rescanning",
+  "应用主题与界面缩放": "App theme and interface scale",
+  "界面缩放": "Interface scale",
+  "重置": "Reset",
+  "调整界面整体缩放比例（85%–150%），设置会自动保存。": "Adjust overall interface zoom (85%–150%). Saved automatically."
 }

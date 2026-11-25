@@ -1,4 +1,5 @@
 import { t, translate, getLocale } from "./i18n.ts";
+import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useEffect, useState } from "react";
 
 import type { AppSettings, Dashboard, JobStatus, TagJobStatus, TaskRecord, WatchProfile } from "./types";
@@ -294,4 +295,53 @@ export function useThemeMode() {
   }, [theme]);
 
   return { theme, setTheme };
+}
+
+export const UI_ZOOM_MIN = 85;
+export const UI_ZOOM_MAX = 150;
+export const UI_ZOOM_STEP = 5;
+export const UI_ZOOM_DEFAULT = 100;
+export const UI_ZOOM_PRESETS = [100, 110, 115, 125, 140] as const;
+const UI_ZOOM_STORAGE_KEY = "cpah-ui-zoom";
+
+export function normalizeUiZoom(value: number) {
+  if (!Number.isFinite(value)) return UI_ZOOM_DEFAULT;
+  const clamped = Math.min(UI_ZOOM_MAX, Math.max(UI_ZOOM_MIN, value));
+  return Math.round(clamped / UI_ZOOM_STEP) * UI_ZOOM_STEP;
+}
+
+export function useUiZoom() {
+  const [uiZoom, setUiZoomState] = useState<number>(() => {
+    try {
+      const saved = window.localStorage.getItem(UI_ZOOM_STORAGE_KEY);
+      if (saved === null) return UI_ZOOM_DEFAULT;
+      return normalizeUiZoom(Number(saved));
+    } catch {
+      return UI_ZOOM_DEFAULT;
+    }
+  });
+
+  const setUiZoom = (value: number) => {
+    setUiZoomState(normalizeUiZoom(value));
+  };
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(UI_ZOOM_STORAGE_KEY, String(uiZoom));
+    } catch {
+      /* Zoom still applies when storage is unavailable. */
+    }
+    const factor = uiZoom / 100;
+    const applyCssZoom = () => {
+      document.documentElement.style.zoom = uiZoom === UI_ZOOM_DEFAULT ? "" : `${uiZoom}%`;
+    };
+    if (typeof window !== "undefined" && "__TAURI_INTERNALS__" in window) {
+      document.documentElement.style.zoom = "";
+      void getCurrentWebview().setZoom(factor).catch(applyCssZoom);
+    } else {
+      applyCssZoom();
+    }
+  }, [uiZoom]);
+
+  return { uiZoom, setUiZoom };
 }

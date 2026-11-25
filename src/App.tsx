@@ -17,6 +17,7 @@ import {
   previewDashboard,
   previewMode,
   useThemeMode,
+  useUiZoom,
   type DirectorySaveState,
   type Notice,
   type TaskFilter,
@@ -81,6 +82,7 @@ export default function App() {
   const removingProfileIdRef = useRef<string | null>(null);
   const initialViewResolvedRef = useRef(false);
   const { theme, setTheme } = useThemeMode();
+  const { uiZoom, setUiZoom } = useUiZoom();
 
   useEffect(() => {
     if (previewMode) return;
@@ -755,6 +757,8 @@ export default function App() {
       appVersion={appVersion}
       theme={theme}
       onThemeChange={setTheme}
+      uiZoom={uiZoom}
+      onUiZoomChange={setUiZoom}
       mineruConfigured={settings.mineruConfigured}
       mineruBaseUrl={settings.mineruBaseUrl}
       token={token}

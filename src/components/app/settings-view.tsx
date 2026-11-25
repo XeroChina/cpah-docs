@@ -2,7 +2,14 @@ import { t, translate } from "@/i18n";
 import { useEffect, useState } from "react";
 import { Bot, ExternalLink, KeyRound, Laptop, LoaderCircle, Moon, PlugZap, ShieldCheck, Sun } from "lucide-react";
 
-import type { ThemeMode } from "@/app-model";
+import {
+  UI_ZOOM_DEFAULT,
+  UI_ZOOM_MAX,
+  UI_ZOOM_MIN,
+  UI_ZOOM_PRESETS,
+  UI_ZOOM_STEP,
+  type ThemeMode,
+} from "@/app-model";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,6 +37,8 @@ type SettingsViewProps = {
   appVersion: string;
   theme: ThemeMode;
   onThemeChange: (theme: ThemeMode) => void;
+  uiZoom: number;
+  onUiZoomChange: (zoom: number) => void;
   mineruConfigured: boolean;
   mineruBaseUrl: string;
   token: string;
@@ -42,7 +51,7 @@ type SettingsViewProps = {
   onTestAgent: (value: { modelType: ClassificationModelType; baseUrl: string; model: string; apiKey: string }) => Promise<void>;
 };
 
-export function SettingsView({ appVersion, theme, onThemeChange, mineruConfigured, mineruBaseUrl, token, onTokenChange, savingToken, onSaveToken, onOpenMineruTokenPage, agent, onSaveAgent, onTestAgent }: SettingsViewProps) {
+export function SettingsView({ appVersion, theme, onThemeChange, uiZoom, onUiZoomChange, mineruConfigured, mineruBaseUrl, token, onTokenChange, savingToken, onSaveToken, onOpenMineruTokenPage, agent, onSaveAgent, onTestAgent }: SettingsViewProps) {
   const { preference } = useLanguage();
   const [modelType, setModelType] = useState(agent.modelType);
   const [baseUrl, setBaseUrl] = useState(agent.baseUrl);
@@ -191,14 +200,58 @@ export function SettingsView({ appVersion, theme, onThemeChange, mineruConfigure
           <div className="mx-auto grid min-h-[96px] max-w-[840px] grid-cols-[150px_minmax(0,1fr)] gap-5 px-5 py-4 max-[760px]:grid-cols-1 max-[900px]:px-4">
             <div>
               <h2 className="text-xs font-medium">{t("外观")}</h2>
-              <p className="mt-1 text-[10px] text-muted-foreground">{t("应用主题")}</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">{t("应用主题与界面缩放")}</p>
             </div>
-            <div className="grid grid-cols-3 gap-2">
-              {themes.map(({ id, label, icon: Icon }) => (
-                <button key={id} type="button" onClick={() => onThemeChange(id)} className={cn("flex h-12 items-center justify-center gap-2 rounded-md border bg-background text-[11px] outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring", theme === id && "border-primary/55 bg-primary/5 text-foreground ring-1 ring-primary/20")}>
-                  <Icon className="size-3.5" />{label}
-                </button>
-              ))}
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-2">
+                {themes.map(({ id, label, icon: Icon }) => (
+                  <button key={id} type="button" onClick={() => onThemeChange(id)} className={cn("flex h-12 items-center justify-center gap-2 rounded-md border bg-background text-[11px] outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring", theme === id && "border-primary/55 bg-primary/5 text-foreground ring-1 ring-primary/20")}>
+                    <Icon className="size-3.5" />{label}
+                  </button>
+                ))}
+              </div>
+              <div className="rounded-md border bg-background p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <label htmlFor="ui-zoom-slider" className="text-[11px] font-medium">{t("界面缩放")}</label>
+                  <div className="flex items-center gap-2">
+                    <span className="min-w-[42px] text-right font-mono text-[11px] font-medium tabular-nums">{uiZoom}%</span>
+                    {uiZoom !== UI_ZOOM_DEFAULT && (
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-[10px]" onClick={() => onUiZoomChange(UI_ZOOM_DEFAULT)}>{t("重置")}</Button>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-2.5 flex items-center gap-3">
+                  <span className="text-[10px] tabular-nums text-muted-foreground">{UI_ZOOM_MIN}%</span>
+                  <input
+                    id="ui-zoom-slider"
+                    type="range"
+                    aria-label={t("界面缩放")}
+                    min={UI_ZOOM_MIN}
+                    max={UI_ZOOM_MAX}
+                    step={UI_ZOOM_STEP}
+                    value={uiZoom}
+                    onChange={(event) => onUiZoomChange(Number(event.target.value))}
+                    className="h-1.5 flex-1 cursor-pointer accent-primary"
+                  />
+                  <span className="text-[10px] tabular-nums text-muted-foreground">{UI_ZOOM_MAX}%</span>
+                </div>
+                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                  {UI_ZOOM_PRESETS.map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => onUiZoomChange(preset)}
+                      className={cn(
+                        "h-7 rounded-md border px-2.5 text-[11px] tabular-nums outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring",
+                        uiZoom === preset && "border-primary/55 bg-primary/5 font-medium text-foreground ring-1 ring-primary/20",
+                      )}
+                    >
+                      {preset}%
+                    </button>
+                  ))}
+                </div>
+                <p className="mt-2 text-[10px] leading-4 text-muted-foreground">{t("调整界面整体缩放比例（85%–150%），设置会自动保存。")}</p>
+              </div>
             </div>
           </div>
         </div>
